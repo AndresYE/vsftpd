@@ -1,0 +1,67 @@
+# Usar una imagen base para la creación de una imagen
+# Usaremos una iamgen del sistema Alpine para montar el servidor DNS
+
+FROM alpine:3.14
+
+# Definimos variables de entorno
+ENV TZ Asia/Shangai
+ENV GROUP=users
+ENV FTP_USER=usuario1
+ENV FTP_PASSW=passu1
+
+## Descargar e Instalar una dependenciav
+RUN apk update; apk upgrade; apk add bash; apk add vsftpd
+
+##Colar archivo de Configuración
+COPY ./etc/vsftpd/vsftpd.conf ./etc/vsftpd/
+##Crear archivos de logs
+RUN mkdir -p /var/log/vsftpd/
+RUN touch /var/log/vsftpd/vsftpd.log
+
+##Creción de Directorios para usuarios
+RUN mkdir -p /home/$FTP_USER
+
+## Agregar Usuario
+RUN adduser -h /home/$FTP_USER -s /sbin/nologin -D $FTP_USER
+
+## Permisos de Directorio
+RUN chown -R $FTP_USER:nogroup /home/$FTP_USER
+
+## Agregar Usuario y contraseña
+RUN echo "$FTP_USER:$FTP_PASSW" | /usr/sbin/chpasswd
+
+#RUN chmod 1777 /home/$USER1
+#RUN chown $USER1:nogroup /home/$US
+
+#RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+#RUN echo $TZ > /etc/timezone
+#RUN rm -rf /tmp/* /var/cache/apk/*
+
+
+#RUN echo "$USER1:$PASSW1" > /usr/sbin/
+
+#RUN mkdir /home/${USER2}
+#RUN adduser -h /home/${USER2} -s "/sbin/nologin" -D ${USER2}
+#RUN echo "$USER2:$PASSW2" > /usr/sbin/chpasswd
+#RUN chown -R ${USER2}:nogroup "/home/${USER2}"
+
+
+#WORKDIR /home/$USER1
+#COPY ./"Texto1.txt" /home/$USER1
+#WORKDIR /home/$USER2 
+#COPY ./"Texto2.txt" .
+#WORKDIR  .
+#RUN mkdir /home/anon
+#RUN chown -R nobody:nogroup "/home/anon"
+#RUN chmod -R 1777 /home/anon
+#WORKDIR /home/anon
+#COPY ./"Texto1.txt" .
+#COPY ./"Texto2.txt" .
+#WORKDIR  .
+
+#RUN nsd-checkconf /etc/nsd/nsd.conf; rc-update add named; rc-service named start
+# Exponemos los puertos requeridos para las respuestas del servidor dns 
+# y las solicitudes de los clientes dns
+#EXPOSE 20/udp 20/tcp 21/udp 21/tcp 21000-21110:21000-21110
+# Configuramos comandos para el despligue del contenedor
+CMD ["/usr/sbin/vsftpd"]

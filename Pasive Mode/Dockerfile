@@ -1,0 +1,89 @@
+#Escuela Politécnica Nacional
+#Tema: Servicios de Red Basado en Contenedores
+#Autor: Andrés Lenin Yazán Endara
+#Servicio: FTP
+#Archivo: Dockerfile
+#Implementación Modo Pasivo Usuario anónimo
+
+## Imagen Base
+# El servicio vsftpd se implementara sobre una imagen base Alpine Linux
+# versión 3.14
+FROM alpine:3.14
+
+## Etiqueta
+LABEL authors="Yazán Endara Andrés Lenin" 
+LABEL build-date="19/01/2023"
+LABEL version="1.0"
+LABEL description="Servidor FTP(vsftpd) sobre Contenedor Docker"
+
+## Instalación de dependencias
+#Actualizamos el repositorio de Alpine mediante apk update
+#Instalamos el servidor dns mediante apk add vsftpd
+RUN apk update; apk add vsftpd
+
+##Archivos de Configuración
+# Copiar archivo vsftpd-anon.conf
+COPY ./etc/vsftpd/vsftpd-anon.conf ./etc/vsftpd/
+
+##Archivos de Log
+#Crear Carpeta vsftpd
+RUN mkdir /var/log/vsftpd
+#Crear archivo xferlog
+RUN touch /var/log/vsftpd/xferlog
+#Crear archivo vsftpd.log
+RUN touch var/log/vsftpd/vsftpd.log
+
+####################################################################################
+##Configuración Usuarios Anónimos
+# Carpeta Chroot de usuarios anónimos
+RUN mkdir -p /usr/vsftpd
+# Crear carpeta compartida de usuarios anónimos
+RUN mkdir -p /usr/vsftpd/Anon-Public
+#Archivos a compartir 
+COPY ./Anon.txt ./usr/vsftpd/Anon-Public
+#Permisos carpeta Chroot  para usuarios anónimos
+RUN chown -R nobody:nogroup "/usr/vsftpd"
+# Permisos carpeta compartida
+RUN chmod -R 777 "/usr/vsftpd/Anon-Public"
+####################################################################################
+##Configuración Usuarios Locales
+##Variables de Entorno
+#ENV GROUP=users
+#ENV USER=user1
+#ENV PASSW=passw1
+
+# Carpeta usuario local
+#RUN mkdir -p /home/${USER}
+# Agregar usuario 
+#RUN adduser -h /home/${USER} -s "/sbin/nologin" -D ${USER}
+# Agregar usuario y contraseña 
+#RUN echo "${USER}:${PASSW}" | /usr/sbin/chpasswd
+# Permisos de usuario
+#RUN chown -R ${USER}:${GROUP} "/home/${USER}"
+#Archivos a compartir 
+#COPY ./Texto 1.txt ./home/${USER1} 
+
+####################################################################################
+##Configuración Usuarios Virtuales
+# Carpeta usuario virtual
+#RUN mkdir -p /home/vsftpd
+#RUN chown -R vsftpd:nogroup "/home/vsftpd"
+#RUN chown  "/srv/ftp"
+
+## Directorio de Trabajo
+#Establecemos el directorio de trabajo en el direcotrio raiz /
+WORKDIR ./
+
+# Exponemos los puertos requeridos para las respuestas del servidor dns 
+# y las solicitudes de los clientes dns
+EXPOSE 20/udp 20/tcp 21/udp 21/tcp 21000-21110:21000-21110
+
+#FTP
+##ENTRYPOINT
+ENTRYPOINT ["/usr/sbin/vsftpd"]
+##CMD
+# Configuramos comandos para el despligue del contenedor
+# Directorio de Archivo de configuración 
+CMD ["/etc/vsftpd/vsftpd-anon.conf"]
+#CMD ["/etc/vsftpd/vsftpd.conf"]
+
